@@ -20,6 +20,7 @@ llm = LLM(
 def duckduckgo_search(query: str) -> str:
     """Search the web for real-time signals."""
     return DuckDuckGoSearchRun().run(query)
+
 # Agents
 researcher = Agent(
     role="Researcher",
@@ -32,8 +33,8 @@ researcher = Agent(
 
 writer = Agent(
     role="Writer",
-    goal="Draft LinkedIn posts",
-    backstory="Copywriter — output ONLY clean posts",
+    goal="Draft posts & summary",
+    backstory="Copywriter — output ONLY clean text",
     llm=llm,
     verbose=False
 )
@@ -41,13 +42,13 @@ writer = Agent(
 coder = Agent(
     role="Coder",
     goal="Write code",
-    backstory="Python engineer — embed market signals in comments",
+    backstory="Python engineer — embed signals in comments",
     llm=llm,
     verbose=False
 )
 
 st.title("🚀 Research Crew Demo")
-st.write("Daily swarm for research, posts, code — powered by CrewAI + Groq (cloud)")
+st.write("Daily swarm for research, summary, posts, code — powered by CrewAI + Groq (cloud)")
 
 st.info("🤖 Cloud-powered — no local setup needed")
 
@@ -56,36 +57,46 @@ goal = st.text_area("Enter goal (e.g., AI trends 2026)", height=100)
 if st.button("Run Research Crew"):
     if goal.strip():
         with st.spinner("Crew running (30-90 seconds)..."):
-            task1 = Task(
-                description=f"Research: {goal}\nFind 10-15 real 2026 market signals/quotes with sources",
-                expected_output="Signals list with sources",
-                agent=researcher
-            )
-            task2 = Task(
-                description="Write 2 LinkedIn posts",
-                expected_output="Two clean posts",
-                agent=writer,
-                context=[task1]
-            )
-            task3 = Task(
-                description=f"Write simple code example for: {goal}\nEmbed 5-8 market signals from research in comments",
-                expected_output="Short Python code with signals",
-                agent=coder,
-                context=[task1]
-            )
+            try:
+                task1 = Task(
+                    description=f"Research: {goal}\nFind 10-15 real 2026 market signals/quotes with sources",
+                    expected_output="Signals list with sources",
+                    agent=researcher
+                )
+                task2 = Task(
+                    description="Write executive summary of research signals (3-5 sentences)",
+                    expected_output="Clean summary",
+                    agent=writer,
+                    context=[task1]
+                )
+                task3 = Task(
+                    description="Write 2 clean LinkedIn posts on goal/research",
+                    expected_output="Two posts",
+                    agent=writer,
+                    context=[task1, task2]
+                )
+                task4 = Task(
+                    description=f"Write simple code example for: {goal}\nEmbed 5-8 market signals + summary in comments",
+                    expected_output="Short Python code with signals",
+                    agent=coder,
+                    context=[task1, task2]
+                )
 
-            crew = Crew(agents=[researcher, writer, coder], tasks=[task1, task2, task3], verbose=False)
-            result = crew.kickoff()
+                crew = Crew(agents=[researcher, writer, coder], tasks=[task1, task2, task3, task4], verbose=False)
+                result = crew.kickoff()
 
-            st.success("Complete!")
-            st.markdown(str(result))
+                st.success("Complete!")
+                st.markdown(str(result))
 
-            st.download_button(
-                label="Download Output",
-                data=str(result),
-                file_name="research_crew_output.txt",
-                mime="text/plain"
-            )
+                st.download_button(
+                    label="Download Output",
+                    data=str(result),
+                    file_name="research_crew_output.txt",
+                    mime="text/plain"
+                )
+            except Exception as e:
+                st.error(f"Crew error: {str(e)}")
+                st.info("Tip: Try a simpler goal or refresh")
     else:
         st.warning("Enter a goal")
 
@@ -99,6 +110,7 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("### 💡 Features")
     st.markdown("- Real-time research signals")
+    st.markdown("- Executive summary")
     st.markdown("- LinkedIn posts")
     st.markdown("- Code examples")
     
