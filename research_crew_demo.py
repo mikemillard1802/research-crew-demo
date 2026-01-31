@@ -15,11 +15,11 @@ llm = LLM(
     temperature=0.1,
 )
 
-# Tool
+# Wrapped search tool
 @tool("DuckDuckGo Search")
 def duckduckgo_search(query: str) -> str:
+    """Search the web for real-time signals."""
     return DuckDuckGoSearchRun().run(query)
-
 # Agents
 researcher = Agent(
     role="Researcher",
